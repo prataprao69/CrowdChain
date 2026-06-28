@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrowdChain — Decentralized Crowdfunding</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Ethers.js v6 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════
+       NAVBAR
+  ═════════════════════════════════════════════ -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      CrowdChain <span>/ dApp</span>
+    </div>
+
+    <div class="navbar-right">
+      <span class="network-pill">
+        Network: <span id="network-name">—</span>
+      </span>
+      <span id="wallet-address">Not connected</span>
+      <button id="connect-btn" class="btn btn-primary btn-sm" onclick="connectWallet()">
+        Connect Wallet
+      </button>
+    </div>
+  </nav>
+
+
+  <!-- ════════════════════════════════════════════
+       MAIN CONTENT
+  ═════════════════════════════════════════════ -->
+  <div class="container main-content">
+
+    <!-- Global Status Box -->
+    <div id="status-box" class="status-box"></div>
+
+    <!-- ── TABS ─────────────────────────────── -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('tab-home')">Home</button>
+      <button class="tab-btn" onclick="showTab('tab-verify')">Get Verified</button>
+      <button class="tab-btn" onclick="showTab('tab-vote')">Vote on Creators</button>
+      <button class="tab-btn" onclick="showTab('tab-create')">Create Campaign</button>
+      <button class="tab-btn" onclick="showTab('tab-campaigns')">All Campaigns</button>
+    </div>
+
+
+    <!-- ════════════════════════════════════════
+         TAB: HOME
+    ═════════════════════════════════════════ -->
+    <div id="tab-home" class="tab-content active">
+
+      <!-- Hero -->
+      <div class="hero-banner">
+        <p class="section-label">Blockchain Crowdfunding</p>
+        <h1 class="hero-title">
+          Fund ideas you believe in.<br />
+          <span class="accent">No middlemen. No trust issues.</span>
+        </h1>
+        <p class="hero-sub">
+          CrowdChain is fully decentralized. Creators are verified by community
+          vote before they can raise funds. Smart contracts enforce every rule.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="showTab('tab-campaigns'); document.querySelectorAll('.tab-btn')[4].classList.add('active'); document.querySelectorAll('.tab-btn').forEach((b,i)=>{ if(i!==4) b.classList.remove('active'); })">
+            Explore Campaigns
+          </button>
+          <button class="btn btn-outline" onclick="connectWallet()">
+            Connect MetaMask
+          </button>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-num" id="stat-campaigns">—</div>
+            <div class="stat-label">Campaigns</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">5</div>
+            <div class="stat-label">Votes to verify</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">0%</div>
+            <div class="stat-label">Platform fee</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="card">
+        <div class="card-title">How It Works</div>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <strong style="display:block; margin-bottom:4px; color:var(--text);">Upload Proof</strong>
+            <div class="step-text">Submit a PDF (ID, company doc) to IPFS to apply for creator verification.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <strong style="display:block; margin-bottom:4px; color:var(--text);">Community Votes</strong>
+            <div class="step-text">Other users review your proof and vote. 5 upvotes grants verification.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <strong style="display:block; margin-bottom:4px; color:var(--text);">Create Campaign</strong>
+            <div class="step-text">Verified creators set a title, goal in ETH, and deadline.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">04</div>
+            <strong style="display:block; margin-bottom:4px; color:var(--text);">Get Funded</strong>
+            <div class="step-text">Anyone can contribute ETH. Funds released only if goal is reached.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">05</div>
+            <strong style="display:block; margin-bottom:4px; color:var(--text);">Withdraw or Refund</strong>
+            <div class="step-text">Creator withdraws on success. Contributors get automatic refunds on failure.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-home -->
+
+
+    <!-- ════════════════════════════════════════
+         TAB: GET VERIFIED
+    ═════════════════════════════════════════ -->
+    <div id="tab-verify" class="tab-content">
+
+      <h2 class="page-title">Get Verified</h2>
+      <p class="page-subtitle">Upload a PDF as proof of legitimacy. It will be stored on IPFS and reviewed by the community.</p>
+
+      <!-- Current status -->
+      <div class="card">
+        <div class="card-title">Your Verification Status</div>
+        <div id="creator-status">
+          <span class="badge badge-gray">Connect wallet to check status</span>
+        </div>
+        <div style="margin-top:12px;">
+          <a id="my-proof-link" href="#" target="_blank" class="btn btn-outline btn-sm" style="display:none;">
+            📄 View My Submitted Proof
+          </a>
+        </div>
+      </div>
+
+      <!-- Apply form -->
+      <div class="card">
+        <div class="card-title">Submit Application</div>
+        <p class="text-sm" style="margin-bottom:16px;">
+          Upload a PDF that proves your identity or legitimacy (e.g. government ID, company registration).
+          This will be publicly visible on IPFS.
+        </p>
+
+        <div class="form-group">
+          <label>Proof Document (PDF only)</label>
+          <input type="file" id="proof-file" accept="application/pdf" />
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="applyForVerification()">
+          Upload & Apply for Verification
+        </button>
+
+        <p class="text-sm" style="margin-top:12px;">
+          ⚠️ Make sure your Pinata API keys are set in <code>app.js</code> before uploading.
+        </p>
+      </div>
+
+    </div><!-- /tab-verify -->
+
+
+    <!-- ════════════════════════════════════════
+         TAB: VOTE ON CREATORS
+    ═════════════════════════════════════════ -->
+    <div id="tab-vote" class="tab-content">
+
+      <h2 class="page-title">Vote on Creators</h2>
+      <p class="page-subtitle">Review a creator's proof and vote to verify or reject them.</p>
+
+      <div class="card">
+        <div class="card-title">Look Up a Creator</div>
+
+        <div class="form-group">
+          <label>Creator Wallet Address</label>
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="vote-creator-address"
+                   placeholder="0x..." style="flex:1;" />
+            <button class="btn btn-primary" onclick="lookupCreator()">Look Up</button>
+          </div>
+        </div>
+
+        <div id="vote-panel">
+          <p class="text-muted">Enter a creator address above to see their proof and vote.</p>
+        </div>
+      </div>
+
+    </div><!-- /tab-vote -->
+
+
+    <!-- ════════════════════════════════════════
+         TAB: CREATE CAMPAIGN
+    ═════════════════════════════════════════ -->
+    <div id="tab-create" class="tab-content">
+
+      <h2 class="page-title">Create a Campaign</h2>
+      <p class="page-subtitle">Only community-verified creators can start campaigns.</p>
+
+      <!-- Gated section — shown only to verified creators -->
+      <div id="create-campaign-section" style="display:none;">
+        <div class="card">
+          <div class="card-title">New Campaign</div>
+
+          <div class="form-group">
+            <label>Campaign Title</label>
+            <input type="text" id="c-title" placeholder="e.g. Solar panels for the village school" />
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="c-description" placeholder="Describe your project, how funds will be used, etc."></textarea>
+          </div>
+
+          <div class="two-col">
+            <div class="form-group">
+              <label>Funding Goal (ETH)</label>
+              <input type="number" id="c-goal" placeholder="e.g. 2.5" step="0.01" min="0.01" />
+            </div>
+            <div class="form-group">
+              <label>Deadline</label>
+              <input type="date" id="c-deadline" />
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="createCampaign()">
+            Create Campaign
+          </button>
+        </div>
+      </div>
+
+      <!-- Shown when not verified -->
+      <div id="not-verified-msg" class="card">
+        <div class="card-title">Verification Required</div>
+        <p class="text-muted">
+          You must be verified by the community before creating campaigns.
+        </p>
+        <button class="btn btn-outline mt-16"
+                onclick="showTab('tab-verify'); document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.querySelectorAll('.tab-btn').forEach((b,i)=>{ if(i!==1) b.classList.remove('active'); })">
+          → Go to Verification
+        </button>
+      </div>
+
+    </div><!-- /tab-create -->
+
+
+    <!-- ════════════════════════════════════════
+         TAB: ALL CAMPAIGNS
+    ═════════════════════════════════════════ -->
+    <div id="tab-campaigns" class="tab-content">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+          <h2 class="page-title">All Campaigns</h2>
+          <p class="page-subtitle" style="margin:0;">Browse and contribute to active campaigns.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadAllCampaigns()">↻ Refresh</button>
+      </div>
+
+      <div id="campaigns-grid">
+        <p class="text-muted">Connect your wallet to view campaigns.</p>
+      </div>
+
+    </div><!-- /tab-campaigns -->
+
+  </div><!-- /container -->
+
+
+  <!-- ════════════════════════════════════════════
+       SCRIPTS
+  ═════════════════════════════════════════════ -->
+  <script src="contract.js"></script>
+  <script src="app.js"></script>
+
+  <!-- Update home stats once ethers loads -->
+  <script>
+    // Update campaign count stat on home screen whenever campaigns load
+    const origLoad = window.loadAllCampaigns;
+
+    // Tab switching helper — keeps only 1 active
+    function showTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+      // Highlight correct tab button
+      const map = {
+        "tab-home": 0, "tab-verify": 1, "tab-vote": 2,
+        "tab-create": 3, "tab-campaigns": 4
+      };
+      document.querySelectorAll(".tab-btn")[map[tabId]]?.classList.add("active");
+    }
+
+    // Hide "not verified" card if create section shows, and vice-versa
+    const observer = new MutationObserver(() => {
+      const section  = document.getElementById("create-campaign-section");
+      const notMsg   = document.getElementById("not-verified-msg");
+      if (section && notMsg) {
+        notMsg.style.display = section.style.display === "none" ? "block" : "none";
+      }
+    });
+    const section = document.getElementById("create-campaign-section");
+    if (section) observer.observe(section, { attributes: true, attributeFilter: ["style"] });
+
+    // Keep stat counter updated
+    async function updateStatCount() {
+      if (!window.contract) return;
+      try {
+        const count = await contract.getCampaignCount();
+        document.getElementById("stat-campaigns").textContent = Number(count);
+      } catch {}
+    }
+    setInterval(updateStatCount, 3000);
+  </script>
+
+</body>
+</html>
